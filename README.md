@@ -13,3 +13,15 @@
    - Change the visible board when switching players to hide the opponent's board.
 6. The game continues until all ships of one player are sunk.
 7. The game displays a **win message** for the winning player.
+
+
+28.11-29.11 - backend days -  During those days, I managed to create a structure and the first working implementation of the backend. I locked in for two days, and it paid off. Technically, i already have a "playable" API. Users can assign the placement of their ships, attack their opponents, and more.
+
+At first, it was challenging to figure out what kind of structure was needed, and this part of the process felt especially creative. That’s why I used a use case as the foundation and spent time considering what the structure should look like.
+
+However, I definitely plan to spend some time making the structure easier to understand, since right now it still feels a bit confusing.
+
+
+
+
+
