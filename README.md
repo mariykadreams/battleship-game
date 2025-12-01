@@ -12,5 +12,5 @@ This is a **turn-based strategy game** where two players compete to sink each ot
 
 ## 📖 Development Journey
 Want to see how this project came together? Check out my detailed development log: <br>
-👉 [Day-by-Day Development Log](https://github.com/mariykadreams/battleship-game/wiki/Day-by-Day) - Read about the challenges, breakthroughs, and lessons learned during development
+👉 [Day-by-Day Development Log](https://github.com/mariykadreams/battleship-game/wiki/Day‐by‐Day-Development-Log) - Read about the challenges, breakthroughs, and lessons learned during development
 
