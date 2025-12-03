@@ -89,7 +89,10 @@ public sealed class GameService : IGameService
 
             if (game.CurrentPlayerId != playerId)
             {
-                throw new InvalidOperationException("It is not this player's turn.");
+                // Provide more context in the exception to aid debugging (expected vs actual)
+                var expected = game.CurrentPlayerId ?? "(null)";
+                var actual = playerId ?? "(null)";
+                throw new InvalidOperationException($"It is not this player's turn. ExpectedCurrent='{expected}', IncomingPlayer='{actual}', GameId='{game.Id}'");
             }
 
             var attacker = game.GetPlayer(playerId);

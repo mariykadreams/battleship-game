@@ -78,8 +78,16 @@ public sealed class GamesController : ControllerBase
         }
 
         var target = new Coordinate(request.Target.Row, request.Target.Column);
-        var result = _gameService.Attack(gameId, request.PlayerId, target);
-        return Ok(result.ToResponse());
+        try
+        {
+            var result = _gameService.Attack(gameId, request.PlayerId, target);
+            return Ok(result.ToResponse());
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Return a 400 with the detailed message to help client-side debugging
+            return BadRequest(ex.Message);
+        }
     }
 
     private static ShipPlacement MapPlacement(ShipPlacementRequest request)

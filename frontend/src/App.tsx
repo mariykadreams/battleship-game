@@ -1,35 +1,166 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { PlayerNameInput } from './components/PlayerNameInput';
+import { ShipPlacement } from './components/ShipPlacement';
+import { GameBoard } from './components/GameBoard';
+import { ApiService } from './services/api';
+import type {
+  GameStateResponse,
+  PlaceShipsRequest,
+  Coordinate,
+  PlayerViewResponse,
+} from './types/api';
+
+type GamePhase = 'names' | 'placement-player1' | 'placement-player2' | 'playing';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [phase, setPhase] = useState<GamePhase>('names');
+  const [gameState, setGameState] = useState<GameStateResponse | null>(null);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+  const handleNamesSubmit = async (p1Name: string, p2Name: string) => {
+    try {
+      const game = await ApiService.createGame({
+        playerOneName: p1Name,
+        playerTwoName: p2Name,
+      });
+      setGameState(game);
+      setCurrentPlayerId(game.players[0]?.playerId || '');
+      setPhase('placement-player1');
+    } catch (error) {
+      alert(`Failed to create game: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleShipsPlaced = async () => {
+    if (!gameState) return;
+
+    try {
+      // Refresh game state
+      const updatedGame = await ApiService.getGame(gameState.gameId);
+      setGameState(updatedGame);
+
+      // Check if both players have placed ships
+      const bothPlaced = updatedGame.players.every((p) => p.hasPlacedShips);
+
+      if (bothPlaced) {
+        // Start the game
+        const startedGame = await ApiService.startGame(updatedGame.gameId);
+        setGameState(startedGame);
+        setPhase('playing');
+      } else {
+        // Move to next player's placement
+        if (phase === 'placement-player1') {
+          const player2 = updatedGame.players.find((p) => p.playerId !== currentPlayerId);
+          if (player2) {
+            setCurrentPlayerId(player2.playerId);
+            setPhase('placement-player2');
+          }
+        } else {
+          // Both should be placed by now, but just in case
+          const startedGame = await ApiService.startGame(updatedGame.gameId);
+          setGameState(startedGame);
+          setPhase('playing');
+        }
+      }
+    } catch (error) {
+      alert(`Failed to proceed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handlePlaceShips = async (
+    gameId: string,
+    playerId: string,
+    ships: PlaceShipsRequest['ships']
+  ) => {
+    await ApiService.placeShips(gameId, {
+      playerId,
+      ships,
+    });
+  };
+
+  const handleAttack = async (gameId: string, playerId: string, target: Coordinate) => {
+    // Make the attack
+    const attackResponse = await ApiService.attack(gameId, {
+      playerId,
+      target,
+    });
+    
+    // Immediately refresh the game state after attack
+    // This updates gameState.currentPlayerId which will cause GameBoard to reload with the new player
+    const updatedGame = await ApiService.getGame(gameId);
+    setGameState(updatedGame);
+    
+    // Log for debugging
+    console.log('Attack completed, turn switched to:', updatedGame.currentPlayerId);
+  };
+
+  const handleRefreshView = async (gameId: string, playerId: string): Promise<PlayerViewResponse> => {
+    return await ApiService.getPlayerView(gameId, playerId);
+  };
+
+  // Refresh game state during gameplay to track turn changes
+  useEffect(() => {
+    if (phase === 'playing' && gameState?.gameId) {
+      const interval = setInterval(async () => {
+        try {
+          const updatedGame = await ApiService.getGame(gameState.gameId);
+          setGameState(updatedGame);
+        } catch (error) {
+          console.error('Failed to refresh game state:', error);
+        }
+      }, 3000); // Refresh every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [phase, gameState?.gameId]);
+
+  if (!gameState) {
+    return (
+      <div className="app">
+        <PlayerNameInput onNext={handleNamesSubmit} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+    );
+  }
+
+  const currentPlayer = gameState.players.find((p) => p.playerId === currentPlayerId);
+
+  if (phase === 'placement-player1' || phase === 'placement-player2') {
+    return (
+      <div className="app">
+        <ShipPlacement
+          playerName={currentPlayer?.displayName || ''}
+          playerId={currentPlayerId}
+          gameId={gameState.gameId}
+          onShipsPlaced={handleShipsPlaced}
+          onPlaceShips={handlePlaceShips}
+        />
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    );
+  }
+
+  if (phase === 'playing') {
+    // Always show the view for the player whose turn it is (from gameState.currentPlayerId)
+    // This is the only source of truth for whose turn it is
+    if (!gameState.currentPlayerId) {
+      return (
+        <div className="app">
+          <div>Waiting for game to start...</div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="app">
+        <GameBoard
+          playerId={gameState.currentPlayerId}
+          gameId={gameState.gameId}
+          onAttack={handleAttack}
+          onRefreshView={handleRefreshView}
+        />
+      </div>
+    );
+  }
+
+  return null;
 }
 
-export default App
+export default App;
