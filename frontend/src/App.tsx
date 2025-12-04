@@ -8,6 +8,7 @@ import type {
   PlaceShipsRequest,
   Coordinate,
   PlayerViewResponse,
+  AttackResponse,
 } from './types/api';
 
 type GamePhase = 'names' | 'placement-player1' | 'placement-player2' | 'playing';
@@ -35,20 +36,16 @@ function App() {
     if (!gameState) return;
 
     try {
-      // Refresh game state
       const updatedGame = await ApiService.getGame(gameState.gameId);
       setGameState(updatedGame);
 
-      // Check if both players have placed ships
       const bothPlaced = updatedGame.players.every((p) => p.hasPlacedShips);
 
       if (bothPlaced) {
-        // Start the game
         const startedGame = await ApiService.startGame(updatedGame.gameId);
         setGameState(startedGame);
         setPhase('playing');
       } else {
-        // Move to next player's placement
         if (phase === 'placement-player1') {
           const player2 = updatedGame.players.find((p) => p.playerId !== currentPlayerId);
           if (player2) {
@@ -56,7 +53,6 @@ function App() {
             setPhase('placement-player2');
           }
         } else {
-          // Both should be placed by now, but just in case
           const startedGame = await ApiService.startGame(updatedGame.gameId);
           setGameState(startedGame);
           setPhase('playing');
@@ -78,27 +74,29 @@ function App() {
     });
   };
 
-  const handleAttack = async (gameId: string, playerId: string, target: Coordinate) => {
-    // Make the attack
+  const handleAttack = async (
+    gameId: string,
+    playerId: string,
+    target: Coordinate
+  ): Promise<AttackResponse> => {
     const attackResponse = await ApiService.attack(gameId, {
       playerId,
       target,
     });
-    
-    // Immediately refresh the game state after attack
-    // This updates gameState.currentPlayerId which will cause GameBoard to reload with the new player
+
     const updatedGame = await ApiService.getGame(gameId);
     setGameState(updatedGame);
-    
-    // Log for debugging
+
     console.log('Attack completed, turn switched to:', updatedGame.currentPlayerId);
+
+    return attackResponse;
   };
 
   const handleRefreshView = async (gameId: string, playerId: string): Promise<PlayerViewResponse> => {
     return await ApiService.getPlayerView(gameId, playerId);
   };
 
-  // Refresh game state during gameplay to track turn changes
+  // During gameplay, periodically refresh the game state so turns stay in sync
   useEffect(() => {
     if (phase === 'playing' && gameState?.gameId) {
       const interval = setInterval(async () => {
@@ -138,8 +136,7 @@ function App() {
   }
 
   if (phase === 'playing') {
-    // Always show the view for the player whose turn it is (from gameState.currentPlayerId)
-    // This is the only source of truth for whose turn it is
+
     if (!gameState.currentPlayerId) {
       return (
         <div className="app">

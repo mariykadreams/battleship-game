@@ -37,6 +37,7 @@ export function ShipPlacement({
       .map(() => Array(BOARD_SIZE).fill(false))
   );
 
+  // Reset all local placement state when starting over or switching player
   const resetPlacement = useCallback(() => {
     setSelectedShipIndex(0);
     setOrientation('Horizontal');
@@ -47,6 +48,7 @@ export function ShipPlacement({
 
   useResetShipPlacementOnPlayerChange(playerId, resetPlacement);
 
+  // Build the list of board coordinates a ship would cover from a starting cell
   const getShipCoordinates = useCallback(
     (row: number, col: number, size: number, orient: 'Horizontal' | 'Vertical'): Coordinate[] => {
       const coords: Coordinate[] = [];
@@ -62,6 +64,7 @@ export function ShipPlacement({
     []
   );
 
+  // Check that a ship fits on the board and is not touching any other ships
   const isValidPlacement = useCallback(
     (row: number, col: number, size: number, orient: 'Horizontal' | 'Vertical'): boolean => {
       if (orient === 'Horizontal' && col + size > BOARD_SIZE) return false;
@@ -85,6 +88,7 @@ export function ShipPlacement({
     [board, getShipCoordinates]
   );
 
+  // Place a ship on the board when the user clicks a valid cell
   const handleCellClick = (row: number, col: number) => {
     if (selectedShipIndex === null) return;
 
@@ -125,6 +129,7 @@ export function ShipPlacement({
     }
   };
 
+  // Remove a previously placed ship and free its cells
   const handleRemoveShip = (index: number) => {
     const ship = placedShips[index];
     const newPlacedShips = placedShips.filter((_, i) => i !== index);
@@ -145,6 +150,7 @@ export function ShipPlacement({
     setSelectedShipIndex(ship.fleetIndex);
   };
 
+  // Send all placed ships to the backend once the full fleet is placed
   const handleSubmit = async () => {
     if (placedShips.length !== REQUIRED_FLEET.length) {
       await Swal.fire({

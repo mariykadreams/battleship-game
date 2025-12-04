@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Swal from 'sweetalert2';
-import type { PlayerViewResponse, Coordinate } from '../types/api';
+import type { PlayerViewResponse, Coordinate, AttackResponse } from '../types/api';
 import { PlayerBoards } from './PlayerBoards';
 import { BoardLegend } from './BoardLegend';
+import { GameLog } from './GameLog';
+
+import type { LogEntry } from './GameLog';
 
 interface GameBoardProps {
   playerId: string;
   gameId: string;
-  onAttack: (gameId: string, playerId: string, target: Coordinate) => Promise<void>;
+  onAttack: (gameId: string, playerId: string, target: Coordinate) => Promise<AttackResponse>;
   onRefreshView: (gameId: string, playerId: string) => Promise<PlayerViewResponse>;
 }
 
@@ -15,24 +18,57 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
   const [view, setView] = useState<PlayerViewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [attacking, setAttacking] = useState(false);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const lastWinnerRef = useRef<string | null>(null);
   const attackInProgressRef = useRef(false);
+  const lastCurrentPlayerIdRef = useRef<string | null>(null);
+  const initialisedLogRef = useRef(false);
 
+  // Append a new text entry to the game log (only latest 100 messages)
+  const addLog = useCallback((message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogEntries((prev) => {
+      const next = [...prev, { timestamp, message }];
+      // keep log reasonably small
+      if (next.length > 100) {
+        return next.slice(next.length - 100);
+      }
+      return next;
+    });
+  }, []);
+
+  // Load the current player's view from the backend
   const loadView = useCallback(async () => {
     try {
       setLoading(true);
       const playerView = await onRefreshView(gameId, playerId);
       setView(playerView);
-      // Log for debugging
       console.log('View loaded:', {
         propPlayerId: playerId,
         viewSelfPlayerId: playerView.self.playerId,
         currentPlayerId: playerView.currentPlayerId,
         isMyTurn: playerView.currentPlayerId === playerView.self.playerId
       });
-      // If the loaded view's playerId doesn't match the prop, log a warning
       if (playerView.self.playerId !== playerId) {
         console.warn(`Player ID mismatch: prop=${playerId}, view=${playerView.self.playerId}`);
+      }
+
+      if (!initialisedLogRef.current) {
+        addLog('Welcome to Battleship!');
+        initialisedLogRef.current = true;
+      }
+      if (!playerView.currentPlayerId) {
+        addLog('Waiting for game to start...');
+      }
+
+      if (playerView.currentPlayerId && lastCurrentPlayerIdRef.current !== playerView.currentPlayerId) {
+        const isMyTurn = playerView.currentPlayerId === playerView.self.playerId;
+        if (isMyTurn) {
+          addLog('It is your turn.');
+        } else {
+          addLog(`Waiting for ${playerView.opponent.displayName} to play...`);
+        }
+        lastCurrentPlayerIdRef.current = playerView.currentPlayerId;
       }
     } catch (error) {
       console.error('Failed to load game view:', error);
@@ -40,19 +76,16 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
     } finally {
       setLoading(false);
     }
-  }, [gameId, playerId, onRefreshView]);
+  }, [gameId, playerId, onRefreshView, addLog]);
 
+  // Periodically refresh the view
   useEffect(() => {
-    // Immediately load view when component mounts or dependencies change
-    // loadView depends on gameId, playerId, and onRefreshView, so it will reload
-    // when any of these change (including when playerId changes after an attack)
     loadView();
-    // Set up polling to refresh view every 2 seconds to catch state changes
     const interval = setInterval(loadView, 2000);
     return () => clearInterval(interval);
   }, [loadView]);
 
-  // Show winner notification once when the game ends
+  // Detect when the game finishes and show winner information once
   useEffect(() => {
     if (!view) return;
     const winnerId = view.winnerPlayerId;
@@ -61,22 +94,21 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
       // Use view.self.playerId to determine if this player won
       const winnerName =
         winnerId === view.self.playerId ? view.self.displayName : view.opponent.displayName;
+      addLog(`${winnerName} wins the game!`);
       Swal.fire({
         title: `${winnerName} win`,
         icon: 'success',
         confirmButtonText: 'OK',
       });
     }
-  }, [view, playerId]);
+  }, [view, playerId, addLog]);
 
+  // Handle a single attack on the opponent board, including validation and feedback
   const handleAttack = async (row: number, col: number) => {
-    // Prevent double-attacks
     if (!view || attacking || attackInProgressRef.current) {
       return;
     }
 
-    // CRITICAL: Use view.self.playerId (the player whose view we're looking at)
-    // We can only attack if it's this player's turn (view.currentPlayerId === view.self.playerId)
     const attackingPlayerId = view.self.playerId;
     
     if (!attackingPlayerId) {
@@ -89,7 +121,6 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
       return;
     }
 
-    // Double-check that it's still this player's turn (view might be stale)
     if (view.currentPlayerId !== view.self.playerId) {
       Swal.fire({
         title: "Not Your Turn",
@@ -100,8 +131,6 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
       return;
     }
 
-    // Debug log to help trace mismatches between client and server
-    // eslint-disable-next-line no-console
     console.log('Attack requested', { 
       gameId, 
       attackingPlayerId: view.self.playerId, 
@@ -124,19 +153,29 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
     }
 
     try {
-      // Set both state and ref to prevent double-attacks
       setAttacking(true);
       attackInProgressRef.current = true;
       
-      // Use view.self.playerId - the player whose view we're looking at
-      // We've already verified that view.currentPlayerId === view.self.playerId above
-      await onAttack(gameId, attackingPlayerId, { row, column: col });
-      
-      // Immediately refresh the view to get the updated game state
-      // This ensures the next attack will use the correct player
+      const attackResult = await onAttack(gameId, attackingPlayerId, { row, column: col });
+
+      // Determine attacker/defender names from the attack result
+      const attackerName =
+        attackResult.attackerId === view.self.playerId
+          ? view.self.displayName
+          : view.opponent.displayName;
+      const defenderName =
+        attackResult.defenderId === view.self.playerId
+          ? view.self.displayName
+          : view.opponent.displayName;
+
+      addLog(`${attackerName} attacked (${row + 1}, ${col + 1}).`);
+
+      if (attackResult.shipSunk && attackResult.shipSize) {
+        addLog(`Ship size ${attackResult.shipSize} of ${defenderName} is destroyed.`);
+      }
+
       await loadView();
-      
-      // Small delay to ensure state is fully updated
+
       await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
       console.error('Attack error details:', error);
@@ -148,7 +187,6 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
         icon: 'error',
         confirmButtonText: 'OK',
       });
-      // Reload view even on error to get latest state
       await loadView();
     } finally {
       setAttacking(false);
@@ -217,6 +255,8 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
           attacking={attacking}
           onAttack={handleAttack}
         />
+
+        <GameLog entries={logEntries} />
 
         <BoardLegend showShips />
       </div>
