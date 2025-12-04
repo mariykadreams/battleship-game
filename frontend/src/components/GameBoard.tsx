@@ -29,7 +29,6 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
     const timestamp = new Date().toLocaleTimeString();
     setLogEntries((prev) => {
       const next = [...prev, { timestamp, message }];
-      // keep log reasonably small
       if (next.length > 100) {
         return next.slice(next.length - 100);
       }
@@ -37,7 +36,6 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
     });
   }, []);
 
-  // Load the current player's view from the backend
   const loadView = useCallback(async () => {
     try {
       setLoading(true);
@@ -78,20 +76,18 @@ export function GameBoard({ playerId, gameId, onAttack, onRefreshView }: GameBoa
     }
   }, [gameId, playerId, onRefreshView, addLog]);
 
-  // Periodically refresh the view
+
   useEffect(() => {
     loadView();
     const interval = setInterval(loadView, 2000);
     return () => clearInterval(interval);
   }, [loadView]);
 
-  // Detect when the game finishes and show winner information once
   useEffect(() => {
     if (!view) return;
     const winnerId = view.winnerPlayerId;
     if (winnerId && lastWinnerRef.current !== winnerId) {
       lastWinnerRef.current = winnerId;
-      // Use view.self.playerId to determine if this player won
       const winnerName =
         winnerId === view.self.playerId ? view.self.displayName : view.opponent.displayName;
       addLog(`${winnerName} wins the game!`);
