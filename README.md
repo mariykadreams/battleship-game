@@ -34,8 +34,8 @@ This is a **turn-based strategy game** where two players compete to sink each ot
 
 ### Prerequisites
 
-- **.NET 8.0 SDK** - [Download here](https://dotnet.microsoft.com/download/dotnet/8.0)
-- **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
+- **.NET 8.0 SDK** 
+- **Node.js** (v18 or higher) 
 - **npm** or **yarn** - Comes with Node.js
 
 ### Installation & Running
@@ -126,8 +126,8 @@ battleship-game/
 
 ## 📖 Documentation
 
-- **[Architecture Documentation](./ARCHITECTURE.md)** - Detailed technical architecture, component structure, and design decisions
-- **[Development Log](./DEVELOPMENT_LOG.md)** - Day-by-day development journey, challenges encountered, and lessons learned
+- **[Architecture Documentation](https://github.com/mariykadreams/battleship-game/wiki/Battleship-Game-Architecture-Documentation)** - Detailed technical architecture, component structure, and design decisions
+- **[Development Log](https://github.com/mariykadreams/battleship-game/wiki/Day‐by‐Day-Development-Log)** - Day-by-day development journey, challenges encountered, and lessons learned
 
 ## 🔧 API Endpoints
 
