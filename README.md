@@ -138,10 +138,6 @@ battleship-game/
 - `POST /api/games/{id}/start` - Start the game
 - `POST /api/games/{id}/attacks` - Make an attack
 
-See the Swagger UI at `https://localhost:7122/swagger` for interactive API documentation.
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for more details on limitations and future improvements.
-
 ## 🚧 Future Plans
 
 - [ ] Add AI opponent for single-player mode
