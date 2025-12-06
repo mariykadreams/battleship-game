@@ -51,10 +51,16 @@ public sealed class GamesController : ControllerBase
             return BadRequest("At least one ship placement is required.");
         }
 
-        var placements = request.Ships.Select(MapPlacement).ToList();
-
-        var game = _gameService.PlaceShips(gameId, request.PlayerId, placements);
-        return Ok(game.ToResponse());
+        try
+        {
+            var placements = request.Ships.Select(MapPlacement).ToList();
+            var game = _gameService.PlaceShips(gameId, request.PlayerId, placements);
+            return Ok(game.ToResponse());
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost("{gameId:guid}/start")]

@@ -71,12 +71,20 @@ export function ShipPlacement({
       if (orient === 'Vertical' && row + size > BOARD_SIZE) return false;
 
       const coords = getShipCoordinates(row, col, size, orient);
+      
       for (const coord of coords) {
         if (board[coord.row][coord.column]) return false;
+        
+
         for (let dr = -1; dr <= 1; dr++) {
           for (let dc = -1; dc <= 1; dc++) {
+            // Skip the cell itself (dr=0, dc=0)
+            if (dr === 0 && dc === 0) continue;
+            
             const nr = coord.row + dr;
             const nc = coord.column + dc;
+            
+            // Check bounds
             if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
               if (board[nr][nc]) return false;
             }
@@ -129,7 +137,6 @@ export function ShipPlacement({
     }
   };
 
-  // Remove a previously placed ship and free its cells
   const handleRemoveShip = (index: number) => {
     const ship = placedShips[index];
     const newPlacedShips = placedShips.filter((_, i) => i !== index);
@@ -150,7 +157,6 @@ export function ShipPlacement({
     setSelectedShipIndex(ship.fleetIndex);
   };
 
-  // Send all placed ships to the backend once the full fleet is placed
   const handleSubmit = async () => {
     if (placedShips.length !== REQUIRED_FLEET.length) {
       await Swal.fire({
@@ -163,8 +169,7 @@ export function ShipPlacement({
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const shipsToSend: ShipPlacementRequest[] = placedShips.map(({ fleetIndex: _fleetIndex, ...ship }) => ship);
+      const shipsToSend: ShipPlacementRequest[] = placedShips.map(({ fleetIndex, ...ship }) => ship);
       await onPlaceShips(gameId, playerId, shipsToSend);
       onShipsPlaced();
     } catch (error) {
