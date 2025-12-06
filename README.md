@@ -140,13 +140,6 @@ battleship-game/
 
 See the Swagger UI at `https://localhost:7122/swagger` for interactive API documentation.
 
-## 🐛 Known Limitations
-
-- **In-Memory Storage** - Game state is lost on server restart
-- **Polling** - Frontend polls backend every 3 seconds (WebSockets would be better)
-- **No Authentication** - Anyone with a game ID can access the game
-- **Single Server** - Not designed for horizontal scaling
-
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for more details on limitations and future improvements.
 
 ## 🚧 Future Plans
@@ -156,13 +149,8 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for more details on limitations and fut
 - [ ] Add database persistence
 - [ ] User authentication and authorization
 - [ ] Game history and replay functionality
-- [ ] Mobile app version
 
-## 📝 License
 
-This project is open source and available for educational purposes.
-
-## 👤 Author
 
 Built as a learning project to explore full-stack development with .NET and React.
 
