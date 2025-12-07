@@ -81,6 +81,27 @@ This is a **turn-based strategy game** where two players compete to sink each ot
 
 4. Open your browser and navigate to the URL shown in the terminal
 
+## ⚠️ Troubleshooting
+
+### SSL/HTTPS Connection Error
+
+**Error:** `ERR_SSL_PROTOCOL_ERROR` or `net::ERR_SSL_PROTOCOL_ERROR` when trying to connect to the backend API.
+
+**Cause:** The frontend is configured to use HTTPS (`https://localhost:5212`), but the backend is running on HTTP (`http://localhost:5212`).
+
+**Solution:**
+
+1. Open `frontend/src/services/api.ts`
+2. Find line 13 with:
+   ```typescript
+   const API_BASE_URL = 'https://localhost:5212/api/games';
+   ```
+3. Change it to use HTTP instead:
+   ```typescript
+   const API_BASE_URL = 'http://localhost:5212/api/games';
+   ```
+4. Save the file and restart your Vite dev server (or wait for hot-reload)
+
 ### Running Tests
 
 #### Backend Tests
