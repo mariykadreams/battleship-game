@@ -8,12 +8,11 @@ This is a **turn-based strategy game** where two players compete to sink each ot
 
 ### Features
 
-- ✅ **Interactive Ship Placement** - Drag-and-drop style placement with real-time validation
+- ✅ **Interactive Ship Placement** - Drag-and-drop style placement
 - ✅ **Turn-Based Gameplay** - Strategic attacks with hit/miss feedback
 - ✅ **Visual Feedback** - Clear indicators for hits, misses, and ship locations
 - ✅ **Game State Management** - Real-time synchronization between players
 - ✅ **Responsive Design** - Works on different screen sizes
-- ✅ **Type-Safe** - Full TypeScript implementation for reliability
 
 ## 🛠️ Tech Stack
 
@@ -120,8 +119,6 @@ battleship-game/
 │   │   ├── types/               # TypeScript types
 │   │   └── hooks/               # Custom React hooks
 │   └── public/                  # Static assets
-├── ARCHITECTURE.md              # Technical architecture documentation
-└── DEVELOPMENT_LOG.md           # Development journey and learnings
 ```
 
 ## 📖 Documentation
@@ -141,8 +138,6 @@ battleship-game/
 ## 🚧 Future Plans
 
 - [ ] Add AI opponent for single-player mode
-- [ ] Implement WebSockets for real-time updates
-- [ ] Add database persistence
 - [ ] User authentication and authorization
 - [ ] Game history and replay functionality
 
