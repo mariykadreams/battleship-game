@@ -33,7 +33,7 @@ This is a **turn-based strategy game** where two players compete to sink each ot
 
 ### Prerequisites
 
-- **.NET 8.0 SDK** 
+- **.NET 8.0** 
 - **Node.js** (v18 or higher) 
 - **npm** or **yarn** - Comes with Node.js
 
